@@ -74,7 +74,7 @@ def set_random_seed(seed):
     random.seed(seed)
     np.random.seed(seed)
     torch.manual_seed(seed)
-    torch.cuda.manual_seed_all(seed)
+    #torch.cuda.manual_seed_all(seed)
 
 
 def setup_logger(logger_name, root, phase, level=logging.INFO, screen=False, tofile=False):
