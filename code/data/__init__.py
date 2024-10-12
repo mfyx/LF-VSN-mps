@@ -21,7 +21,7 @@ def create_dataloader(dataset, dataset_opt, opt=None, sampler=None):
         #                                   pin_memory=False)
         return torch.utils.data.DataLoader(dataset, batch_size=batch_size, shuffle=shuffle,
                                            num_workers=8, sampler=sampler, drop_last=True,
-                                           pin_memory=False)
+                                           pin_memory=True)
     else:
         return torch.utils.data.DataLoader(dataset, batch_size=1, shuffle=False, num_workers=1,
                                            pin_memory=True)
