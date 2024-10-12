@@ -59,9 +59,12 @@ def main():
     # loading resume state if exists
     if opt['path'].get('resume_state', None):
         # distributed resuming: all load into default GPU
-        device_id = torch.cuda.current_device()
+        #device_id = torch.cuda.current_device()
+        #resume_state = torch.load(opt['path']['resume_state'],
+        #                          map_location=lambda storage, loc: storage.cuda(device_id))
+        device = torch.device('mps' if torch.backends.mps.is_available() else 'cpu')
         resume_state = torch.load(opt['path']['resume_state'],
-                                  map_location=lambda storage, loc: storage.cuda(device_id))
+                                map_location=lambda storage, loc: storage.to(device))
         option.check_resume(opt, resume_state['iter'])  # check resume options
     else:
         resume_state = None
