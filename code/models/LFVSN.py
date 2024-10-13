@@ -16,6 +16,10 @@ logger = logging.getLogger('base')
 dwt=DWT()
 iwt=IWT()
 
+""" CHANGE """
+import torchvision.models as models
+import torch.nn.functional as F
+
 
 class Model_VSN(BaseModel):
     def __init__(self, opt):
@@ -48,6 +52,11 @@ class Model_VSN(BaseModel):
                 self.netG = DistributedDataParallel(self.netG, device_ids=[torch.device('mps')])
         else:
             self.netG = DataParallel(self.netG)
+        """ CHANGE """
+        # 初始化VGG网络
+        self.vgg = models.vgg19(pretrained=True).features
+        self.vgg = self.vgg.to(self.device).eval()
+
         # print network
         self.print_network()
         self.load()
@@ -95,6 +104,16 @@ class Model_VSN(BaseModel):
                 raise NotImplementedError('MultiStepLR learning rate scheme is enough.')
 
             self.log_dict = OrderedDict()
+    
+    """ CHANGE """
+    def perceptual_loss(self, output, target):
+        # 合并帧数和通道维度
+        output = output.view(-1, output.size(2), output.size(3), output.size(4))
+        target = target.view(-1, target.size(2), target.size(3), target.size(4))
+
+        output_features = self.vgg(output)
+        target_features = self.vgg(target)
+        return F.mse_loss(output_features, target_features)
 
     def feed_data(self, data):
         self.ref_L = data['LQ'].to(self.device)  
@@ -122,6 +141,7 @@ class Model_VSN(BaseModel):
 
         return h_t, c_t, memory
 
+    """ TODO """
     def loss_forward(self, out, y):
         if self.opt['model'] == 'LSTM-VRN':
             l_forw_fit = self.train_opt['lambda_fit_forw'] * self.Reconstruction_forw(out, y)
@@ -130,8 +150,14 @@ class Model_VSN(BaseModel):
             l_forw_fit = 0
             for i in range(out.shape[1]):
                 l_forw_fit += self.train_opt['lambda_fit_forw'] * self.Reconstruction_forw(out[:, i], y[:, i])
-            return l_forw_fit
+            #return l_forw_fit + l_perceptual
+            
+            """ CHANGE """
+            l_perceptual = self.perceptual_loss(out, y)
+            print("loss_forward add l_percetual")
+            return l_forw_fit + l_perceptual
 
+    """ TODO """
     def loss_back_rec(self, out, x):
         if self.opt['model'] == 'LSTM-VRN':
             l_back_rec = self.train_opt['lambda_rec_back'] * self.Reconstruction_back(out, x)
@@ -140,7 +166,12 @@ class Model_VSN(BaseModel):
             l_back_rec = 0
             for i in range(x.shape[1]):
                 l_back_rec += self.train_opt['lambda_rec_back'] * self.Reconstruction_back(out[:, i], x[:, i])
-            return l_back_rec
+            #return l_back_rec
+            
+            """ CHANGE """
+            l_perceptual = self.perceptual_loss(out, x)
+            print("loss_back add l_percetual")
+            return l_back_rec + l_perceptual
     
     def loss_back_rec_mul(self, out, x):
         out = torch.chunk(out,self.num_video,dim=1)
@@ -195,6 +226,7 @@ class Model_VSN(BaseModel):
         for i in range(n):
             l_center_x += self.loss_back_rec(out_x_h.reshape(-1, n, self.gop, 3, h, w)[:, :, self.gop//2].unsqueeze(2)[:,i], self.ref_L[:, :, center - intval:center + intval + 1][:,:,self.gop//2].unsqueeze(2)[:, i])
 
+        """ TODO """
         loss = l_forw_fit*2 + l_back_rec + l_center_x*4
         loss.backward()
 
