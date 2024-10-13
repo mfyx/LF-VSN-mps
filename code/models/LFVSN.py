@@ -153,6 +153,7 @@ class Model_VSN(BaseModel):
             #return l_forw_fit + l_perceptual
             
             """ CHANGE """
+            #衡量生成的隐写视频（stego video）与原始封面视频（cover video）之间的特征相似性
             l_perceptual = self.perceptual_loss(out, y)
             print("loss_forward add l_percetual")
             return l_forw_fit + l_perceptual
@@ -169,6 +170,7 @@ class Model_VSN(BaseModel):
             #return l_back_rec
             
             """ CHANGE """
+            #衡量恢复的秘密视频（recovered secret video）与原始秘密视频（original secret video）之间的特征相似性
             l_perceptual = self.perceptual_loss(out, x)
             print("loss_back add l_percetual")
             return l_back_rec + l_perceptual
