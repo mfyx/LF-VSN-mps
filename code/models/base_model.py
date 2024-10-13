@@ -9,8 +9,14 @@ class BaseModel():
     def __init__(self, opt):
         self.opt = opt
 
-        #self.device = torch.device('cuda' if opt['gpu_ids'] is not None else 'cpu')
-        self.device = torch.device('mps' if torch.backends.mps.is_available() else 'cpu')
+        """ CHANGE """
+        #import options.options as opt
+        from options import options
+        opts = options.parse()
+        if opts.get('device') == 'cuda':
+            self.device = torch.device('cuda' if opt['gpu_ids'] is not None else 'cpu')
+        elif opts.get('device') == 'mps':
+            self.device = torch.device('mps' if torch.backends.mps.is_available() else 'cpu')
 
         self.is_train = opt['is_train']
         self.schedulers = []

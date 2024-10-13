@@ -7,9 +7,11 @@ from .module_util import initialize_weights_xavier
 from torch.nn import init
 from .common import DWT,IWT
 import cv2
-from basicsr.archs.arch_util import flow_warp
 from models.modules.Subnet_constructor import subnet
 import numpy as np
+
+#from basicsr.archs.arch_util import flow_warp
+import options.options as option
 
 dwt=DWT()
 iwt=IWT()
@@ -138,14 +140,26 @@ class PredictiveModuleMIMO(nn.Module):
         return res
 
 def gauss_noise(shape):
-    noise = torch.zeros(shape).cuda()
-    for i in range(noise.shape[0]):
-        noise[i] = torch.randn(noise[i].shape).cuda()
-
+    """CHANGE"""
+    opt = option.parse()
+    if opt.get('device') == 'cuda':
+        noise = torch.zeros(shape).cuda()
+        for i in range(noise.shape[0]):
+            noise[i] = torch.randn(noise[i].shape).cuda()
+    elif opt.get('device') == 'mps':
+        device = torch.device('mps' if torch.backends.mps.is_available() else 'cpu')
+        noise = torch.zeros(shape).to(device)
+        for i in range(noise.shape[0]):
+            noise[i] = torch.randn(noise[i].shape).to(device)
     return noise
 
 def gauss_noise_mul(shape):
-    noise = torch.randn(shape).cuda()
+    opt = option.parse()
+    if opt.get('device') == 'cuda':
+        noise = torch.randn(shape).cuda()
+    elif opt.get('device') == 'mps':
+        device = torch.device('mps' if torch.backends.mps.is_available() else 'cpu')
+        noise = torch.randn(shape).to(device)
 
     return noise
 

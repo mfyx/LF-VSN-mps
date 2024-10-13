@@ -18,6 +18,8 @@ try:
 except ImportError:
     from yaml import Loader, Dumper
 
+import options.options as option
+
 
 def OrderedYaml():
     '''yaml orderedDict support'''
@@ -74,7 +76,12 @@ def set_random_seed(seed):
     random.seed(seed)
     np.random.seed(seed)
     torch.manual_seed(seed)
+
+    """ CHANGE """
     #torch.cuda.manual_seed_all(seed)
+    opt = option.parse()
+    if opt.get('device') == 'cuda':
+        torch.cuda.manual_seed_all(seed)
 
 
 def setup_logger(logger_name, root, phase, level=logging.INFO, screen=False, tofile=False):

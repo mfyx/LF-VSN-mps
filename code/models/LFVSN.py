@@ -38,8 +38,14 @@ class Model_VSN(BaseModel):
         self.idxx = 0
 
         self.netG = networks.define_G_v2(opt).to(self.device)
+        """ CHANGE """
+        from options import options
+        opts = options.parse()
         if opt['dist']:
-            self.netG = DistributedDataParallel(self.netG, device_ids=[torch.cuda.current_device()])
+            if opts.get('device') == 'cuda':
+                self.netG = DistributedDataParallel(self.netG, device_ids=[torch.cuda.current_device()])
+            elif opts.get('device') == 'mps':
+                self.netG = DistributedDataParallel(self.netG, device_ids=[torch.device('mps')])
         else:
             self.netG = DataParallel(self.netG)
         # print network
@@ -98,10 +104,21 @@ class Model_VSN(BaseModel):
         b, c, h, w = z.shape
         h_t = []
         c_t = []
-        for _ in range(self.opt_net['block_num_rbm']):
-            h_t.append(torch.zeros([b, c, h, w]).cuda())
-            c_t.append(torch.zeros([b, c, h, w]).cuda())
-        memory = torch.zeros([b, c, h, w]).cuda()
+
+        """ CHANGE """
+        from options import options
+        opts = options.parse()
+        if opts.get('device') == 'cuda':
+            for _ in range(self.opt_net['block_num_rbm']):
+                h_t.append(torch.zeros([b, c, h, w]).cuda())
+                c_t.append(torch.zeros([b, c, h, w]).cuda())
+            memory = torch.zeros([b, c, h, w]).cuda()
+        elif opts.get('device') == 'mps':
+            device = torch.device('mps' if torch.backends.mps.is_available() else 'cpu')
+            for _ in range(self.opt_net['block_num_rbm']):
+                h_t.append(torch.zeros([b, c, h, w]).to(device))
+                c_t.append(torch.zeros([b, c, h, w]).to(device))
+            memory = torch.zeros([b, c, h, w]).to(device)
 
         return h_t, c_t, memory
 

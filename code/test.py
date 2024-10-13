@@ -21,8 +21,12 @@ def init_dist(backend='nccl', **kwargs):
     if mp.get_start_method(allow_none=True) != 'spawn':
         mp.set_start_method('spawn')
     rank = int(os.environ['RANK'])
-    num_gpus = torch.cuda.device_count()
-    torch.cuda.set_device(rank % num_gpus)
+    
+    """ CHANGE """
+    opt = option.parse()
+    if opt.get('device') == 'cuda':
+        num_gpus = torch.cuda.device_count()
+        torch.cuda.set_device(rank % num_gpus)
     dist.init_process_group(backend=backend, **kwargs)
 
 def cal_pnsr(sr_img, gt_img):
@@ -59,12 +63,15 @@ def main():
     # loading resume state if exists
     if opt['path'].get('resume_state', None):
         # distributed resuming: all load into default GPU
-        #device_id = torch.cuda.current_device()
-        #resume_state = torch.load(opt['path']['resume_state'],
-        #                          map_location=lambda storage, loc: storage.cuda(device_id))
-        device = torch.device('mps' if torch.backends.mps.is_available() else 'cpu')
-        resume_state = torch.load(opt['path']['resume_state'],
-                                map_location=lambda storage, loc: storage.to(device))
+        """ CHANGE """
+        if opt.get('device') == 'cuda':
+            device_id = torch.cuda.current_device()
+            resume_state = torch.load(opt['path']['resume_state'],
+                                      map_location=lambda storage, loc: storage.cuda(device_id))
+        elif opt.get('device') == 'mps':
+            device = torch.device('mps' if torch.backends.mps.is_available() else 'cpu')
+            resume_state = torch.load(opt['path']['resume_state'],
+                                    map_location=lambda storage, loc: storage.to(device))
         option.check_resume(opt, resume_state['iter'])  # check resume options
     else:
         resume_state = None

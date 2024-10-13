@@ -44,10 +44,14 @@ def iwt_init(x):
     x3 = x[:, out_channel * 2:out_channel * 3, :, :] / 2
     x4 = x[:, out_channel * 3:out_channel * 4, :, :] / 2
 
-
-    #h = torch.zeros([out_batch, out_channel, out_height, out_width]).float().cuda()
-    device = torch.device('mps' if torch.backends.mps.is_available() else 'cpu')
-    h = torch.zeros([out_batch, out_channel, out_height, out_width]).float().to(device)
+    """ CHANGE """
+    import options.options as option
+    opt = option.parse()
+    if opt.get('device') == 'cuda':
+        h = torch.zeros([out_batch, out_channel, out_height, out_width]).float().cuda()
+    elif opt.get('device') == 'mps':
+        device = torch.device('mps' if torch.backends.mps.is_available() else 'cpu')
+        h = torch.zeros([out_batch, out_channel, out_height, out_width]).float().to(device)
 
     h[:, :, 0::2, 0::2] = x1 - x2 - x3 + x4
     h[:, :, 1::2, 0::2] = x1 - x2 + x3 - x4
