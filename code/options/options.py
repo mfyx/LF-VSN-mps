@@ -5,15 +5,28 @@ import yaml
 from utils.util import OrderedYaml
 Loader, Dumper = OrderedYaml()
 
+#CHANGE:
+use_cuda = torch.cuda.is_available()
+use_mps = torch.backends.mps.is_available()
 
 def parse(opt_path, is_train=True):
     with open(opt_path, mode='r') as f:
         opt = yaml.load(f, Loader=Loader)
-    # export CUDA_VISIBLE_DEVICES
 
+    #CHANGE:
+    # export CUDA_VISIBLE_DEVICES
     #gpu_list = ','.join(str(x) for x in opt['gpu_ids'])
     #os.environ['CUDA_VISIBLE_DEVICES'] = gpu_list
     #print('export CUDA_VISIBLE_DEVICES=' + gpu_list)
+    if use_cuda:
+        opt['device'] = 'cuda'
+        print("Using CUDA for acceleration")
+    elif use_mps:
+        opt['device'] = 'mps'
+        print("Using MPS for acceleration")
+    else:
+        opt['device'] = 'cpu'
+        print("Using CPU for computation")
 
     opt['is_train'] = is_train
     if opt['distortion'] == 'sr':
