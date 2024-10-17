@@ -97,8 +97,19 @@ class Model_VSN(BaseModel):
             self.log_dict = OrderedDict()
 
     def feed_data(self, data):
-        self.ref_L = data['LQ'].to(self.device)  
-        self.real_H = data['GT'].to(self.device)
+        """ CHANGE """
+        from torchvision import transforms
+        transform = transforms.Compose([
+            transforms.RandomHorizontalFlip(),
+            transforms.RandomVerticalFlip(),
+            transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.1)
+        ])
+
+        self.ref_L = transform(data['LQ'].to(self.device))
+        self.real_H = transform(data['GT'].to(self.device))
+
+        #self.ref_L = data['LQ'].to(self.device)  
+        #self.real_H = data['GT'].to(self.device)
 
     def init_hidden_state(self, z):
         b, c, h, w = z.shape
