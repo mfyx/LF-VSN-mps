@@ -38,6 +38,14 @@ class Model_VSN(BaseModel):
         self.idxx = 0
 
         self.netG = networks.define_G_v2(opt).to(self.device)
+
+        """ CHANGE """
+        from torch.nn.utils import prune
+        # 添加剪枝
+        for module in self.netG.modules():
+            if isinstance(module, nn.Conv2d):
+                prune.l1_unstructured(module, name='weight', amount=0.2)
+
         """ CHANGE """
         from options import options
         opts = options.parse()
