@@ -40,6 +40,10 @@ class Model_VSN(BaseModel):
         self.netG = networks.define_G_v2(opt).to(self.device)
 
         """ CHANGE """
+        #self.teacher_model = networks.define_G_v2(opt).to(self.device)
+        #self.teacher_model.eval()  # 确保教师模型在评估模式下
+
+        """ CHANGE """
         from torch.nn.utils import prune
         # 添加剪枝
         for module in self.netG.modules():
@@ -61,6 +65,28 @@ class Model_VSN(BaseModel):
         self.load()
 
         self.Quantization = Quantization()
+
+        """ CHANGE """
+        # # 量化模型
+        # import torch.quantization as quant
+        # # 定义量化配置
+        # quant_config = quant.get_default_qconfig('fbgemm')
+
+        # # 准备模型
+        # self.netG.qconfig = quant_config
+        # quant.prepare(self.netG, inplace=True)
+
+        # # 确保所有权重和偏置使用float32
+        # for module in self.netG.modules():
+        #     if hasattr(module, 'weight') and module.weight is not None:
+        #         module.weight.data = module.weight.data.float()
+        #     if hasattr(module, 'bias') and module.bias is not None:
+        #         module.bias.data = module.bias.data.float()
+
+        # quant.convert(self.netG, inplace=True)
+        # #self.netG = torch.quantization.quantize_dynamic(
+        # #    self.netG, {nn.Linear}, dtype=torch.qint8
+        # #)
 
         if self.is_train:
             self.netG.train()
@@ -202,6 +228,14 @@ class Model_VSN(BaseModel):
         l_center_x = 0
         for i in range(n):
             l_center_x += self.loss_back_rec(out_x_h.reshape(-1, n, self.gop, 3, h, w)[:, :, self.gop//2].unsqueeze(2)[:,i], self.ref_L[:, :, center - intval:center + intval + 1][:,:,self.gop//2].unsqueeze(2)[:, i])
+
+        """ CHANGE """
+        # # 假设有一个教师模型 teacher_model
+        # teacher_output = self.teacher_model(self.ref_L)
+        # student_output = self.netG(self.ref_L)
+        # # 计算蒸馏损失
+        # distillation_loss = nn.KLDivLoss()(F.log_softmax(student_output / T, dim=1),
+        #                                 F.softmax(teacher_output / T, dim=1)) * (T * T)
 
         loss = l_forw_fit*2 + l_back_rec + l_center_x*4
         loss.backward()
