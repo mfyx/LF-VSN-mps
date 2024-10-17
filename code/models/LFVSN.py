@@ -105,8 +105,14 @@ class Model_VSN(BaseModel):
             transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.1)
         ])
 
-        self.ref_L = transform(data['LQ'].to(self.device))
+        # 添加高斯噪声
+        #noise = torch.randn_like(data['LQ']) * 0.1  # 0.1是噪声强度，可以根据需要调整
+        noise = torch.randn_like(data['LQ']).to(self.device) * 0.1  # 将噪声移动到MPS设备
+        self.ref_L = transform(data['LQ'].to(self.device) + noise)
         self.real_H = transform(data['GT'].to(self.device))
+
+        #self.ref_L = transform(data['LQ'].to(self.device))
+        #self.real_H = transform(data['GT'].to(self.device))
 
         #self.ref_L = data['LQ'].to(self.device)  
         #self.real_H = data['GT'].to(self.device)
